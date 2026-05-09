@@ -234,7 +234,7 @@ The app is deployed on **Hugging Face Spaces** using Streamlit for free hosting.
    - `SUNBIRD_API_TOKEN` = `<your-token>`
 5. Deploy!
 
-**Deployed URL:** [https://huggingface.co/spaces/](https://huggingface.co/spaces/) (add your own)
+**Deployed URL:** [https://sunbird-assistant.streamlit.app/](https://sunbird-assistant.streamlit.app/)
 
 ## Troubleshooting
 
