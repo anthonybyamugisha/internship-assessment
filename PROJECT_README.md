@@ -2,7 +2,7 @@
 
 A Generative AI web app that transforms voice or text into summarized, translated speech in Ugandan languages. Built with **Streamlit**, Python, and the Sunbird AI API.
 
-## Project Description
+## Project Description .
 
 This application enables users to either speak or type content, then automatically:
 - **Transcribe** audio using Sunbird's Speech-to-Text (STT) model
