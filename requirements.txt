@@ -1,5 +1,6 @@
 pytest
 requests
 python-dotenv
-gradio>=4.0.0
+streamlit>=1.28.0
 mutagen>=1.46.0
+librosa>=0.10.0
