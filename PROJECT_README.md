@@ -98,7 +98,7 @@ The pipeline serves as a voice-enabled multilingual assistant for Ugandan langua
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/<your-username>/internship-assessment.git
+   git clone https://github.com/anthonybyamugisha/internship-assessment.git
    cd internship-assessment
    ```
 
