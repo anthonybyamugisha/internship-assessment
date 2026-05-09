@@ -1,15 +1,17 @@
 """
-Sunbird AI API Client - thin wrapper around Sunbird endpoints
+Sunbird AI API Client - optimized wrapper around Sunbird endpoints
 """
 
 import os
 import requests
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable
 from pathlib import Path
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 class SunbirdClient:
-    """Client for interacting with Sunbird AI API."""
+    """Optimized client for interacting with Sunbird AI API."""
     
     BASE_URL = "https://api.sunbird.ai"
     
@@ -29,6 +31,22 @@ class SunbirdClient:
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json"
         })
+        
+        # Configure connection pooling and retries for better performance
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["POST"]
+        )
+        adapter = HTTPAdapter(
+            pool_connections=10,
+            pool_maxsize=10,
+            max_retries=retry_strategy,
+            pool_block=False
+        )
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
     
     def transcribe_audio(self, audio_path: str, language: Optional[str] = None) -> str:
         """

@@ -405,66 +405,101 @@ with tab1:
             if not text_input or not text_input.strip():
                 st.warning("⚠️ Please enter some text to process.")
             else:
-                with st.spinner("⏳ Processing your text..."):
-                    try:
-                        start_time = time.time()
-                        target_lang = LANGUAGES[target_language]
-                        result = pipeline.process_text_input(text_input.strip(), target_lang)
-                        processing_time = time.time() - start_time
-                        
-                        # Display success
-                        st.markdown(f"""
-                        <div class="success-message">
-                            ✅ Processing complete! ({processing_time:.1f}s)
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Display results in cards
-                        display_result_card("📝 Summary", result["summary"], "")
-                        display_result_card("🌐 Translated Summary", result["translated_summary"], "")
-                        
-                        # Audio section
-                        if result.get("translated_audio_url"):
-                            st.markdown("### 🔊 Translated Audio")
-                            audio_bytes = download_audio(result["translated_audio_url"])
-                            if audio_bytes:
-                                mime_type = get_audio_mime_type(result["translated_audio_url"])
-                                st.audio(audio_bytes, format=mime_type)
-                                
-                                # Download button
-                                st.download_button(
-                                    label="📥 Download Audio File",
-                                    data=audio_bytes,
-                                    file_name=f"translated_{target_lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3",
-                                    mime=mime_type,
-                                    use_container_width=True
-                                )
-                        
-                        # Processing stats
-                        with st.expander("📊 Processing Statistics"):
-                            st.markdown(f"""
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <div class="stat-number">{len(text_input)}</div>
-                                    <div class="stat-label">Characters</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-number">{len(result['summary'])}</div>
-                                    <div class="stat-label">Summary Chars</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-number">{processing_time:.1f}s</div>
-                                    <div class="stat-label">Processing Time</div>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
+                # Create progress placeholder
+                progress_container = st.empty()
+                status_container = st.empty()
+                
+                try:
+                    start_time = time.time()
+                    target_lang = LANGUAGES[target_language]
+                    
+                    # Show progress steps
+                    progress_container.progress(0)
+                    status_container.info("🔄 Step 1/4: Summarizing text...")
+                    
+                    # Step 1: Summarize
+                    summary = pipeline.client.summarize_text(text_input.strip())
+                    progress_container.progress(33)
+                    status_container.info("🔄 Step 2/4: Translating to " + target_language + "...")
+                    
+                    # Step 2: Translate
+                    translated = pipeline.client.translate_text(summary, target_lang)
+                    progress_container.progress(66)
+                    status_container.info("🔄 Step 3/4: Generating speech audio...")
+                    
+                    # Step 3: Synthesize speech
+                    audio_url = pipeline.client.synthesize_speech(translated, target_lang)
+                    progress_container.progress(100)
+                    status_container.success("✅ Processing complete!")
+                    
+                    processing_time = time.time() - start_time
+                    
+                    # Clear progress indicators after a moment
+                    time.sleep(0.5)
+                    progress_container.empty()
+                    status_container.empty()
+                    
+                    result = {
+                        "summary": summary,
+                        "translated_summary": translated,
+                        "translated_audio_url": audio_url
+                    }
+                    
+                    # Display success message
+                    st.markdown(f"""
+                    <div class="success-message">
+                        ✅ Processing complete! ({processing_time:.1f}s)
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Display results in cards
+                    display_result_card("📝 Summary", result["summary"], "")
+                    display_result_card("🌐 Translated Summary", result["translated_summary"], "")
+                    
+                    # Audio section
+                    if result.get("translated_audio_url"):
+                        st.markdown("### 🔊 Translated Audio")
+                        audio_bytes = download_audio(result["translated_audio_url"])
+                        if audio_bytes:
+                            mime_type = get_audio_mime_type(result["translated_audio_url"])
+                            st.audio(audio_bytes, format=mime_type)
                             
-                    except Exception as e:
+                            # Download button
+                            st.download_button(
+                                label="📥 Download Audio File",
+                                data=audio_bytes,
+                                file_name=f"translated_{target_lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3",
+                                mime=mime_type,
+                                use_container_width=True
+                            )
+                    
+                    # Processing stats
+                    with st.expander("📊 Processing Statistics"):
                         st.markdown(f"""
-                        <div class="error-message">
-                            ❌ Error: {str(e)}
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">{len(text_input)}</div>
+                                <div class="stat-label">Characters</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{len(result['summary'])}</div>
+                                <div class="stat-label">Summary Chars</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{processing_time:.1f}s</div>
+                                <div class="stat-label">Processing Time</div>
+                            </div>
                         </div>
                         """, unsafe_allow_html=True)
+                        
+                except Exception as e:
+                    progress_container.empty()
+                    status_container.empty()
+                    st.markdown(f"""
+                    <div class="error-message">
+                        ❌ Error: {str(e)}
+                    </div>
+                    """, unsafe_allow_html=True)
         else:
             st.markdown("""
             <div class="info-box">
@@ -517,67 +552,108 @@ with tab2:
                         </div>
                         """, unsafe_allow_html=True)
                     else:
-                        with st.spinner("⏳ Processing your audio... This may take a few minutes."):
-                            try:
-                                start_time = time.time()
-                                target_lang = LANGUAGES[audio_language]
-                                result = pipeline.process_audio_input(tmp_path, target_lang)
-                                processing_time = time.time() - start_time
-                                
-                                # Display success
-                                st.markdown(f"""
-                                <div class="success-message">
-                                    ✅ Processing complete! ({processing_time:.1f}s)
-                                </div>
-                                """, unsafe_allow_html=True)
-                                
-                                # Display all results
-                                display_result_card("📝 Transcript", result["transcript"], "")
-                                display_result_card("📝 Summary", result["summary"], "")
-                                display_result_card("🌐 Translated Summary", result["translated_summary"], "")
-                                
-                                # Audio section
-                                if result.get("translated_audio_url"):
-                                    st.markdown("### 🔊 Translated Audio")
-                                    audio_bytes = download_audio(result["translated_audio_url"])
-                                    if audio_bytes:
-                                        mime_type = get_audio_mime_type(result["translated_audio_url"])
-                                        st.audio(audio_bytes, format=mime_type)
-                                        
-                                        # Download button
-                                        st.download_button(
-                                            label="📥 Download Audio File",
-                                            data=audio_bytes,
-                                            file_name=f"translated_{target_lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3",
-                                            mime=mime_type,
-                                            use_container_width=True
-                                        )
-                                
-                                # Processing stats
-                                with st.expander("📊 Processing Statistics"):
-                                    st.markdown(f"""
-                                    <div class="stats-grid">
-                                        <div class="stat-card">
-                                            <div class="stat-number">{duration:.1f}s</div>
-                                            <div class="stat-label">Audio Duration</div>
-                                        </div>
-                                        <div class="stat-card">
-                                            <div class="stat-number">{len(result['transcript'])}</div>
-                                            <div class="stat-label">Transcript Chars</div>
-                                        </div>
-                                        <div class="stat-card">
-                                            <div class="stat-number">{processing_time:.1f}s</div>
-                                            <div class="stat-label">Processing Time</div>
-                                        </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                        # Create progress placeholder
+                        progress_container = st.empty()
+                        status_container = st.empty()
+                        
+                        try:
+                            start_time = time.time()
+                            target_lang = LANGUAGES[audio_language]
+                            
+                            # Show progress steps
+                            progress_container.progress(0)
+                            status_container.info("🔄 Step 1/4: Transcribing audio...")
+                            
+                            # Step 1: Transcribe
+                            transcript = pipeline.client.transcribe_audio(tmp_path)
+                            progress_container.progress(25)
+                            status_container.info("🔄 Step 2/4: Summarizing transcript...")
+                            
+                            # Step 2: Summarize
+                            summary = pipeline.client.summarize_text(transcript)
+                            progress_container.progress(50)
+                            status_container.info("🔄 Step 3/4: Translating to " + audio_language + "...")
+                            
+                            # Step 3: Translate
+                            translated = pipeline.client.translate_text(summary, target_lang)
+                            progress_container.progress(75)
+                            status_container.info("🔄 Step 4/4: Generating speech audio...")
+                            
+                            # Step 4: Synthesize speech
+                            audio_url = pipeline.client.synthesize_speech(translated, target_lang)
+                            progress_container.progress(100)
+                            status_container.success("✅ Processing complete!")
+                            
+                            processing_time = time.time() - start_time
+                            
+                            # Clear progress indicators after a moment
+                            time.sleep(0.5)
+                            progress_container.empty()
+                            status_container.empty()
+                            
+                            result = {
+                                "transcript": transcript,
+                                "summary": summary,
+                                "translated_summary": translated,
+                                "translated_audio_url": audio_url
+                            }
+                            
+                            # Display success message
+                            st.markdown(f"""
+                            <div class="success-message">
+                                ✅ Processing complete! ({processing_time:.1f}s)
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # Display all results
+                            display_result_card("📝 Transcript", result["transcript"], "")
+                            display_result_card("📝 Summary", result["summary"], "")
+                            display_result_card("🌐 Translated Summary", result["translated_summary"], "")
+                            
+                            # Audio section
+                            if result.get("translated_audio_url"):
+                                st.markdown("### 🔊 Translated Audio")
+                                audio_bytes = download_audio(result["translated_audio_url"])
+                                if audio_bytes:
+                                    mime_type = get_audio_mime_type(result["translated_audio_url"])
+                                    st.audio(audio_bytes, format=mime_type)
                                     
-                            except Exception as e:
+                                    # Download button
+                                    st.download_button(
+                                        label="📥 Download Audio File",
+                                        data=audio_bytes,
+                                        file_name=f"translated_{target_lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3",
+                                        mime=mime_type,
+                                        use_container_width=True
+                                    )
+                            
+                            # Processing stats
+                            with st.expander("📊 Processing Statistics"):
                                 st.markdown(f"""
-                                <div class="error-message">
-                                    ❌ Error: {str(e)}
+                                <div class="stats-grid">
+                                    <div class="stat-card">
+                                        <div class="stat-number">{duration:.1f}s</div>
+                                        <div class="stat-label">Audio Duration</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-number">{len(result['transcript'])}</div>
+                                        <div class="stat-label">Transcript Chars</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-number">{processing_time:.1f}s</div>
+                                        <div class="stat-label">Processing Time</div>
+                                    </div>
                                 </div>
                                 """, unsafe_allow_html=True)
+                                
+                        except Exception as e:
+                            progress_container.empty()
+                            status_container.empty()
+                            st.markdown(f"""
+                            <div class="error-message">
+                                ❌ Error: {str(e)}
+                            </div>
+                            """, unsafe_allow_html=True)
                 finally:
                     # Clean up temp file
                     if os.path.exists(tmp_path):

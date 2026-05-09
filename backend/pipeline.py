@@ -1,23 +1,29 @@
 """
 Pipeline orchestration: Audio → STT → Summarize → Translate → TTS
+Optimized with progress callbacks for better UX.
 """
 
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable
 from .sunbird_client import SunbirdClient
 from mutagen import File as MutagenFile
 
 
 class Pipeline:
-    """Orchestrates the full GenAI pipeline."""
+    """Orchestrates the full GenAI pipeline with progress tracking."""
     
     MAX_AUDIO_DURATION_MINUTES = 5
     
     def __init__(self, client: SunbirdClient):
         """Initialize with Sunbird API client."""
         self.client = client
+    
+    def _notify_progress(self, callback: Optional[Callable], message: str):
+        """Send progress update to callback if provided."""
+        if callback:
+            callback(message)
     
     def _get_audio_duration(self, audio_path: str) -> float:
         """
