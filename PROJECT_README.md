@@ -202,37 +202,23 @@ Target: Runyankole
 
 ## Deployment
 
-The app is deployed on **Hugging Face Spaces** using Streamlit for free hosting.
+The app is deployed on **Streamlit Cloud** for free hosting.
 
-### Deploy to Hugging Face Spaces
+### Deploy to Streamlit Cloud
 
-1. **Create a Hugging Face account:** https://huggingface.co/join
+1. **Push your code to GitHub**
 
-2. **Create new Space:** https://huggingface.co/new-space
-   - Select **Streamlit** SDK
-   - Choose **Public** visibility
-   - Name your space (e.g., `sunbird-voice-translator`)
+2. **Go to** https://streamlit.io/cloud
 
-3. **Add your Sunbird API token as a secret:**
-   - Go to Space Settings → **Variables and secrets**
+3. **Sign in** with your GitHub account
+
+4. **Click "Deploy an app"** and select your repository
+
+5. **Add environment variables** in Streamlit Cloud settings:
+   - Go to app Settings → Secrets
    - Add secret: `SUNBIRD_API_TOKEN` = `<your-token>`
 
-4. **Push your code:**
-   ```bash
-   git remote add space https://huggingface.co/spaces/<your-username>/<your-space-name>
-   git push space main
-   ```
-
-5. **Hugging Face builds and deploys automatically** (~2-5 min)
-
-### Alternative: Deploy to Streamlit Cloud
-
-1. Push your code to GitHub
-2. Go to https://streamlit.io/cloud
-3. Connect your GitHub repository
-4. Add environment variables in Streamlit Cloud settings:
-   - `SUNBIRD_API_TOKEN` = `<your-token>`
-5. Deploy!
+6. **Deploy!** The app will be live in minutes.
 
 **Deployed URL:** [https://sunbird-assistant.streamlit.app/](https://sunbird-assistant.streamlit.app/)
 
